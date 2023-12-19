@@ -29,9 +29,9 @@ int EL2798setup(uint16 slave)
 
     retval = 0;
     uint16 map_1c12[1] = {0xFFFF};
-    retval += ec_SDOwrite(slave, 0x1c12, 0x00, TRUE, sizeof(map_1c12), &map_1c12, EC_TIMEOUTSAFE);
+    retval += ec_SDOwrite(slave, 0, 0x00, TRUE, sizeof(map_1c12), &map_1c12, EC_TIMEOUTSAFE);
 
-    printf("coucou\n");
+    printf("coucou : %d\n", retval);
     return (1);
 }
 
@@ -87,14 +87,72 @@ int main()
     if(usedmem<= sizeof(IOmap))
         printf("Bonjour %d\n",usedmem);
 
-    ec_send_processdata();
-    int wkc = ec_receive_processdata(EC_TIMEOUTRET);
-    ec_writestate(0);
-    ec_statecheck(0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE);
+
+
+
+    // Get the slave configuration structure for EL2798
+    ec_slavet EL2798 = ec_slave[2];
+
+    // Check if the slave is reachable
+    if (EL2798.state != EC_STATE_OPERATIONAL)
+    {
+        fprintf(stderr, "EL2798 is not in operational state.\n");
+        ec_close();
+        return -1;
+    }
+
+     // Set the data to turn on the EL2798
+    uint8_t enableData = 1;  // You may need to adjust this value based on the EL2798 specifications
+
+    // Specify the offset in the process data to write the value
+    unsigned int offset = 0;  // Assuming the offset is 0, update it based on the actual offset
+
+    // Check if the offset is within bounds
+    if (offset + sizeof(enableData) <= EL2798.Obits / 8)
+    {
+        // Create a pointer to the target location in the process data
+        uint8_t *targetPtr = &(EL2798.outputs[0]) + offset;
+
+        // Write the data to the EL2798
+        memcpy(targetPtr, &enableData, sizeof(enableData));
+    }
+    else
+    {
+        fprintf(stderr, "Invalid offset for writing data.\n");
+        ec_close();
+        return -1;
+    }
     
-    //set_output_int16(1,0,ec_slave[1].outputs);
+
+
+    // Request the master to send the frame
+    ec_send_processdata();
+
+    // Wait for the frame to be sent
+    ec_receive_processdata(EC_TIMEOUTRET);
+
+    // Close EtherCAT
+    ec_close();
+
     return 0;
 }
+
+// You may need to adjust this value based on the EL2798 specifications // Specify the offset in the process data to write the value unsigned int offset = 0; // Assuming the offset is 0, update it based on the actual offset // Write the data to the EL2798 if (offset + sizeof(enableData) <= EL2798.Ibytes) { memcpy(&(EL2798.inputs\[0\] + offset), &enableData, sizeof(enableData)); } else { fprintf(stderr, "Invalid offset for writing data.\\n"); ec\_close(); return \-1; } // Request the master to send the frame ec\_send\_processdata(); // Wait for the frame to be sent ec\_receive\_processdata(EC\_TIMEOUTRET); // Close EtherCAT ec\_close();
+
+
+
+    //ec_send_processdata();
+    //printf("wkc = : %d\n", ec_receive_processdata(EC_TIMEOUTRET));
+    //printf("workcounter : %d\n",ec_writestate(2)); //workcounter =1 
+    //ec_statecheck(0, EC_STATE_OPERATIONAL, EC_TIMEOUTSTATE);
+    //
+    //EL2798setup(2);
+    //ec_slave[2].Obits = 0xFF;
+    //printf(" configaddr :%d \n", ec_slave[2].configadr);
+    //
+    //printf("workcounter : %d\n",ec_writestate(2));
+    //
+    //set_output_int16(1,0,ec_slave[1].outputs);
 
 /*
 void simpletest(char *ifname)
