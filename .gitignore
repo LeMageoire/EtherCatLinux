@@ -1,3 +1,6 @@
 ./SOEM
 build
 .vscode
+tmp/v1.c
+tmp/v2.c
+tmp/v3.c
